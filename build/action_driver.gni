@@ -1,0 +1,4 @@
+# ActionDriver additions are opt-in and leave upstream builds unchanged.
+declare_args() {
+  action_driver = false
+}

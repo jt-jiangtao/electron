@@ -13,6 +13,12 @@
 #include "shell/browser/ui/cocoa/root_view_mac.h"
 #include "ui/base/cocoa/window_size_constants.h"
 
+#if defined(ACTION_DRIVER)
+#include "base/command_line.h"
+#include "shell/browser/ui/cocoa/action_driver/watermark_policy.h"
+#include "shell/browser/ui/cocoa/action_driver/watermark_view.h"
+#endif
+
 #import <objc/message.h>
 #import <objc/runtime.h>
 
@@ -158,13 +164,48 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     SwizzleSwipeWithEvent(view, @selector(swiz_nsview_swipeWithEvent:));
 #endif  // IS_MAS_BUILD
     shell_ = shell;
+#if defined(ACTION_DRIVER)
+    action_driver_watermark_enabled_ =
+        electron::action_driver::ShouldShowWatermark(
+            base::CommandLine::ForCurrentProcess()->HasSwitch(
+                "action-driver-watermark"));
+    [self updateActionDriverWatermark];
+#endif
   }
   return self;
 }
 
 - (void)cleanup {
+#if defined(ACTION_DRIVER)
+  action_driver_watermark_enabled_ = NO;
+  [action_driver_watermark_ removeFromSuperview];
+  action_driver_watermark_ = nil;
+#endif
   shell_ = nullptr;
 }
+
+#if defined(ACTION_DRIVER)
+- (void)setContentView:(NSView*)view {
+  [super setContentView:view];
+  [self updateActionDriverWatermark];
+}
+
+- (void)updateActionDriverWatermark {
+  NSView* content = self.contentView;
+  NSView* parent = content.superview;
+  if (!action_driver_watermark_enabled_ || !parent)
+    return;
+  if (!action_driver_watermark_) {
+    action_driver_watermark_ =
+        [[ActionDriverWatermarkView alloc] initWithFrame:NSZeroRect];
+  }
+  [action_driver_watermark_ removeFromSuperview];
+  [parent addSubview:action_driver_watermark_
+         positioned:NSWindowAbove
+         relativeTo:content];
+  [(ActionDriverWatermarkView*)action_driver_watermark_ updateFrameFromWindow];
+}
+#endif
 
 - (electron::NativeWindowMac*)shell {
   return shell_;
@@ -250,6 +291,9 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   // the frame directly when resize is disabled
   if (!electron::ScopedDisableResize::IsResizeDisabled())
     [super setFrame:windowFrame display:displayViews];
+#if defined(ACTION_DRIVER)
+  [self updateActionDriverWatermark];
+#endif
 }
 
 - (void)orderWindow:(NSWindowOrderingMode)place relativeTo:(NSInteger)otherWin {

@@ -34,6 +34,10 @@ class ElectronNativeWindowObserver;
 @interface ElectronNSWindow : NativeWidgetMacNSWindow {
  @private
   raw_ptr<electron::NativeWindowMac> shell_;
+#if defined(ACTION_DRIVER)
+  BOOL action_driver_watermark_enabled_;
+  NSView* action_driver_watermark_;
+#endif
 }
 @property BOOL acceptsFirstMouse;
 @property BOOL enableLargerThanScreen;
@@ -48,6 +52,9 @@ class ElectronNativeWindowObserver;
 - (NSRect)originalContentRectForFrameRect:(NSRect)frameRect;
 - (BOOL)toggleFullScreenMode:(id)sender;
 - (void)disableHeadlessMode;
+#if defined(ACTION_DRIVER)
+- (void)updateActionDriverWatermark;
+#endif
 @end
 
 #endif  // ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_NS_WINDOW_H_
