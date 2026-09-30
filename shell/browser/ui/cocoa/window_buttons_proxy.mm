@@ -42,6 +42,11 @@
 }
 
 - (void)dealloc {
+  if (observed_left_button_)
+    [[NSNotificationCenter defaultCenter]
+        removeObserver:self
+                  name:NSViewFrameDidChangeNotification
+                object:observed_left_button_];
   if (hover_view_)
     [hover_view_ removeFromSuperview];
 }
@@ -50,6 +55,12 @@
   NSView* titleBarContainer = [self titleBarContainer];
   if (!titleBarContainer)
     return;
+  if (![self leftButton].superview.superview) {
+    [[self leftButton] setHidden:!visible];
+    [[self middleButton] setHidden:!visible];
+    [[self rightButton] setHidden:!visible];
+    return;
+  }
   [titleBarContainer setHidden:!visible];
 }
 
@@ -57,6 +68,8 @@
   NSView* titleBarContainer = [self titleBarContainer];
   if (!titleBarContainer)
     return YES;
+  if (![self leftButton].superview.superview)
+    return ![self leftButton].hidden;
   return ![titleBarContainer isHidden];
 }
 
@@ -110,6 +123,21 @@
   NSView* middle = [self middleButton];
   NSView* right = [self rightButton];
 
+  if (!left.superview.superview && observed_left_button_ != left) {
+    if (observed_left_button_)
+      [[NSNotificationCenter defaultCenter]
+          removeObserver:self
+                    name:NSViewFrameDidChangeNotification
+                  object:observed_left_button_];
+    observed_left_button_ = (NSButton*)left;
+    [left setPostsFrameChangedNotifications:YES];
+    [[NSNotificationCenter defaultCenter]
+        addObserver:self
+           selector:@selector(windowButtonFrameDidChange:)
+               name:NSViewFrameDidChangeNotification
+             object:left];
+  }
+
   float button_width = NSWidth(left.frame);
   float button_height = NSHeight(left.frame);
   float padding = NSMinX(middle.frame) - NSMaxX(left.frame);
@@ -120,23 +148,37 @@
   else
     start = margin_.x();
 
-  NSRect cbounds = titleBarContainer.frame;
-  cbounds.size.height = button_height + 2 * margin_.y();
-  // Custom height must be larger than the button height to use
-  if ([self useCustomHeight]) {
-    cbounds.size.height = height_;
+  float button_y;
+  if (!left.superview.superview) {
+    // On macOS 27 the buttons live directly in a full-window root view.
+    // Resizing that view would resize the entire window's title-bar layout.
+    button_y = NSHeight(titleBarContainer.bounds) - button_height - margin_.y();
+  } else {
+    NSRect cbounds = titleBarContainer.frame;
+    cbounds.size.height = button_height + 2 * margin_.y();
+    // Custom height must be larger than the button height to use.
+    if ([self useCustomHeight])
+      cbounds.size.height = height_;
+    cbounds.origin.y = NSHeight(window_.frame) - NSHeight(cbounds);
+    [titleBarContainer setFrame:cbounds];
+    button_y = [self getCurrentMargin].y();
   }
-  cbounds.origin.y = NSHeight(window_.frame) - NSHeight(cbounds);
-  [titleBarContainer setFrame:cbounds];
 
-  [left setFrameOrigin:NSMakePoint(start, [self getCurrentMargin].y())];
+  updating_button_frames_ = YES;
+  [left setFrameOrigin:NSMakePoint(start, button_y)];
   start += button_width + padding;
-  [middle setFrameOrigin:NSMakePoint(start, [self getCurrentMargin].y())];
+  [middle setFrameOrigin:NSMakePoint(start, button_y)];
   start += button_width + padding;
-  [right setFrameOrigin:NSMakePoint(start, [self getCurrentMargin].y())];
+  [right setFrameOrigin:NSMakePoint(start, button_y)];
+  updating_button_frames_ = NO;
 
   if (hover_view_)
     [hover_view_ setFrame:[self getButtonsBounds]];
+}
+
+- (void)windowButtonFrameDidChange:(NSNotification*)notification {
+  if (!updating_button_frames_)
+    [self redraw];
 }
 
 - (void)updateTrackingAreas {
@@ -205,6 +247,15 @@
   NSView* left = [self leftButton];
   NSView* right = [self rightButton];
 
+  if (!left.superview.superview) {
+    result.set_y(NSHeight(titleBarContainer.bounds) - NSMaxY(left.frame));
+    if (base::i18n::IsRTL())
+      result.set_x(NSWidth(window_.frame) - NSMaxX(right.frame));
+    else
+      result.set_x(NSMinX(left.frame));
+    return result;
+  }
+
   if (height_ != 0) {
     result.set_y((height_ - NSHeight(left.frame)) / 2);
 
@@ -225,12 +276,13 @@
 }
 
 // Receive the titlebar container, which might be nil if the window does not
-// have the NSWindowStyleMaskTitled style.
+// have the NSWindowStyleMaskTitled style. Newer macOS versions place the
+// buttons directly in a root view rather than a nested titlebar container.
 - (NSView*)titleBarContainer {
   NSView* left = [self leftButton];
   if (!left.superview)
     return nil;
-  return left.superview.superview;
+  return left.superview.superview ?: left.superview;
 }
 
 // Receive the window buttons, note that the buttons might be removed and

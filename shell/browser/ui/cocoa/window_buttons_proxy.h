@@ -38,6 +38,8 @@
   BOOL mouse_inside_;
   NSTrackingArea* __strong tracking_area_;
   ButtonsAreaHoverView* __strong hover_view_;
+  NSButton* __weak observed_left_button_;
+  BOOL updating_button_frames_;
 }
 
 - (id)initWithWindow:(NSWindow*)window;
