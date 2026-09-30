@@ -1,9 +1,9 @@
 #if defined(ACTION_DRIVER)
-#include "shell/browser/ui/cocoa/action_driver/watermark_view.h"
+#include "shell/browser/ui/cocoa/action-driver/watermark_view.h"
 
 #include <cmath>
 
-@implementation ActionDriverWatermarkView {
+@implementation ProductWatermarkView {
   __weak NSWindow* observed_window_;
 }
 

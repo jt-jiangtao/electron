@@ -53,7 +53,7 @@ class ElectronNativeWindowObserver;
 - (BOOL)toggleFullScreenMode:(id)sender;
 - (void)disableHeadlessMode;
 #if defined(ACTION_DRIVER)
-- (void)updateActionDriverWatermark;
+- (void)updateProductWatermark;
 #endif
 @end
 

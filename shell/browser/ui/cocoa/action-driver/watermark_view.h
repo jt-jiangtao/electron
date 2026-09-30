@@ -4,7 +4,7 @@
 
 #import <Cocoa/Cocoa.h>
 
-@interface ActionDriverWatermarkView : NSView
+@interface ProductWatermarkView : NSView
 - (void)updateFrameFromWindow;
 @end
 

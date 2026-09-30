@@ -17,7 +17,7 @@ import("//tools/grit/repack.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/gni/snapshot_toolchain.gni")
 import("build/asar.gni")
-import("build/action_driver.gni")
+import("build/action-driver.gni")
 import("build/electron_paks.gni")
 import("build/extract_symbols.gni")
 import("build/js2c_toolchain.gni")
@@ -572,9 +572,9 @@ source_set("electron_lib") {
     sources += filenames.lib_sources_mac
     if (action_driver) {
       sources += [
-        "shell/browser/ui/cocoa/action_driver/watermark_policy.h",
-        "shell/browser/ui/cocoa/action_driver/watermark_view.h",
-        "shell/browser/ui/cocoa/action_driver/watermark_view.mm",
+        "shell/browser/ui/cocoa/action-driver/watermark_policy.h",
+        "shell/browser/ui/cocoa/action-driver/watermark_view.h",
+        "shell/browser/ui/cocoa/action-driver/watermark_view.mm",
       ]
     }
   }

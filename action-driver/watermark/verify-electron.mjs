@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os'
 const here=fileURLToPath(new URL('./',import.meta.url))
 const root=path.resolve(here,'../../../..')
 const { _electron }=createRequire(import.meta.url)(path.join(root,'thirdparty/playwright/packages/playwright-core'))
-const executablePath=process.argv[2] ?? path.join(root,'thirdparty/build/electron-workspace/src/out/ActionDriver/Electron.app/Contents/MacOS/Electron')
+const executablePath=process.argv[2] ?? path.join(root,'thirdparty/build/electron-workspace/src/out/Action-Driver/Electron.app/Contents/MacOS/Electron')
 const output=path.join(root,'thirdparty/build/verification/watermark')
 await mkdir(output,{recursive:true})
 const temporary=await mkdtemp(path.join(tmpdir(),'watermark-electron-'))

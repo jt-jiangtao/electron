@@ -15,8 +15,8 @@
 
 #if defined(ACTION_DRIVER)
 #include "base/command_line.h"
-#include "shell/browser/ui/cocoa/action_driver/watermark_policy.h"
-#include "shell/browser/ui/cocoa/action_driver/watermark_view.h"
+#include "shell/browser/ui/cocoa/action-driver/watermark_policy.h"
+#include "shell/browser/ui/cocoa/action-driver/watermark_view.h"
 #endif
 
 #import <objc/message.h>
@@ -169,7 +169,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
         electron::action_driver::ShouldShowWatermark(
             base::CommandLine::ForCurrentProcess()->HasSwitch(
                 "action-driver-watermark"));
-    [self updateActionDriverWatermark];
+    [self updateProductWatermark];
 #endif
   }
   return self;
@@ -187,23 +187,23 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 #if defined(ACTION_DRIVER)
 - (void)setContentView:(NSView*)view {
   [super setContentView:view];
-  [self updateActionDriverWatermark];
+  [self updateProductWatermark];
 }
 
-- (void)updateActionDriverWatermark {
+- (void)updateProductWatermark {
   NSView* content = self.contentView;
   NSView* parent = content.superview;
   if (!action_driver_watermark_enabled_ || !parent)
     return;
   if (!action_driver_watermark_) {
     action_driver_watermark_ =
-        [[ActionDriverWatermarkView alloc] initWithFrame:NSZeroRect];
+        [[ProductWatermarkView alloc] initWithFrame:NSZeroRect];
   }
   [action_driver_watermark_ removeFromSuperview];
   [parent addSubview:action_driver_watermark_
          positioned:NSWindowAbove
          relativeTo:content];
-  [(ActionDriverWatermarkView*)action_driver_watermark_ updateFrameFromWindow];
+  [(ProductWatermarkView*)action_driver_watermark_ updateFrameFromWindow];
 }
 #endif
 
@@ -292,7 +292,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   if (!electron::ScopedDisableResize::IsResizeDisabled())
     [super setFrame:windowFrame display:displayViews];
 #if defined(ACTION_DRIVER)
-  [self updateActionDriverWatermark];
+  [self updateProductWatermark];
 #endif
 }
 

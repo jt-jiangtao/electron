@@ -2,19 +2,19 @@
 #import <Cocoa/Cocoa.h>
 #include <cassert>
 #include <cstdio>
-#include "shell/browser/ui/cocoa/action_driver/watermark_view.h"
+#include "shell/browser/ui/cocoa/action-driver/watermark_view.h"
 
 int main() {
   @autoreleasepool {
     [NSApplication sharedApplication];
-    __weak ActionDriverWatermarkView* released_view = nil;
+    __weak ProductWatermarkView* released_view = nil;
     @autoreleasepool {
       NSWindow* window = [[NSWindow alloc]
           initWithContentRect:NSMakeRect(0, 0, 800, 600)
                     styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskResizable
                       backing:NSBackingStoreBuffered defer:NO];
       window.releasedWhenClosed = NO;
-      ActionDriverWatermarkView* view = [[ActionDriverWatermarkView alloc]
+      ProductWatermarkView* view = [[ProductWatermarkView alloc]
           initWithFrame:NSZeroRect];
       released_view = view;
       NSView* parent = window.contentView.superview;
