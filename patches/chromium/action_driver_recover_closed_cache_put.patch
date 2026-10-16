@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Action Driver <action-driver@local>
+Date: Sat, 17 Oct 2026 00:44:00 +0800
+Subject: Recover a closed Cache Storage put only for evaluation clients
+
+The evaluation client runs several OnlyOffice editors in one process. A
+CacheStorageCache::Put that arrives before the backend is open hits a DCHECK
+and aborts the whole process when dcheck_always_on is set. Processes started
+with --action-driver-cache-write-recover, or with
+ACTION_DRIVER_CACHE_WRITE_RECOVER=1, return the existing storage error
+instead. Every other process keeps the DCHECK.
+
+diff --git a/content/browser/cache_storage/cache_storage_cache.cc b/content/browser/cache_storage/cache_storage_cache.cc
+--- a/content/browser/cache_storage/cache_storage_cache.cc
++++ b/content/browser/cache_storage/cache_storage_cache.cc
+@@ -5,6 +5,7 @@
+ #include "content/browser/cache_storage/cache_storage_cache.h"
+ 
+ #include <stddef.h>
++#include <cstdlib>
+ 
+ #include <algorithm>
+ #include <functional>
+@@ -14,6 +15,7 @@
+ #include <utility>
+ 
+ #include "base/barrier_closure.h"
++#include "base/command_line.h"
+ #include "base/compiler_specific.h"
+ #include "base/containers/flat_map.h"
+ #include "base/files/file_path.h"
+@@ -1766,9 +1768,24 @@
+   UpdateCacheSize(base::BindOnce(std::move(callback), error));
+ }
+ 
++bool ActionDriverRecoverCacheWrite() {
++  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
++          "action-driver-cache-write-recover")) {
++    return true;
++  }
++  const char* value = std::getenv("ACTION_DRIVER_CACHE_WRITE_RECOVER");
++  return value && value[0] == '1' && value[1] == '\0';
++}
++
+ void CacheStorageCache::Put(blink::mojom::BatchOperationPtr operation,
+                             int64_t trace_id,
+                             ErrorCallback callback) {
++  if (!(BACKEND_OPEN == backend_state_ || initializing_) &&
++      ActionDriverRecoverCacheWrite()) {
++    std::move(callback).Run(
++        MakeErrorStorage(ErrorStorageType::kPutImplBackendClosed));
++    return;
++  }
+   DCHECK(BACKEND_OPEN == backend_state_ || initializing_);
+   DCHECK_EQ(blink::mojom::OperationType::kPut, operation->operation_type);
+   Put(std::move(operation->request), std::move(operation->response), trace_id,
+@@ -1779,6 +1796,12 @@
+                             blink::mojom::FetchAPIResponsePtr response,
+                             int64_t trace_id,
+                             ErrorCallback callback) {
++  if (!(BACKEND_OPEN == backend_state_ || initializing_) &&
++      ActionDriverRecoverCacheWrite()) {
++    std::move(callback).Run(
++        MakeErrorStorage(ErrorStorageType::kPutImplBackendClosed));
++    return;
++  }
+   DCHECK(BACKEND_OPEN == backend_state_ || initializing_);
+ 
+   auto put_context = cache_entry_handler_->CreatePutContext(
