@@ -39,7 +39,7 @@ diff --git a/content/browser/cache_storage/cache_storage_cache.cc b/content/brow
 +    return true;
 +  }
 +  const char* value = std::getenv("ACTION_DRIVER_CACHE_WRITE_RECOVER");
-+  return value && value[0] == '1' && value[1] == '\0';
++  return value && std::string(value) == "1";
 +}
 +
  void CacheStorageCache::Put(blink::mojom::BatchOperationPtr operation,
